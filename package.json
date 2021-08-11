@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "react-scripts start",
-    "build": "webpack --config webpack.config.js --mode=development"
+    "build": "webpack --config webpack.config.js --mode=production"
   },
   "keywords": [],
   "author": "",
