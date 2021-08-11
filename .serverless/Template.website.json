@@ -1,0 +1,5 @@
+{
+  "bucketName": "p03-flickr-main",
+  "region": "us-east-1",
+  "url": "http://p03-flickr-main.s3-website-us-east-1.amazonaws.com"
+}
