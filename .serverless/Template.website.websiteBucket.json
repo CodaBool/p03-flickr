@@ -1,0 +1,6 @@
+{
+  "name": "p03-flickr-main",
+  "region": "us-east-1",
+  "accelerated": false,
+  "url": "https://p03-flickr-main.s3.amazonaws.com"
+}
