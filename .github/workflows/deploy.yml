@@ -1,0 +1,65 @@
+name: Deploy
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    if: "! contains(github.event.commits[0].message, '[no ci]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Extract Pipline Vars
+        # The repo name must be validated since it will be used in the S3 Bucket creation when saving Serverless state
+        # Repo name must follow S3 Naming conventions, no space + no uppercase
+        # Lower Cases the Repo name, Github already removes space
+        run: |
+          repo=${GITHUB_REPOSITORY#CodaBool/}
+          echo "##[set-output name=repo;]${repo,,}" 
+          echo "##[set-output name=stage;]${GITHUB_REF#refs/heads/}"
+          build=$(echo "${SHA:0:7}.${RUN_NUMBER}"|tr -d '"') # removes an annoying double quote
+          echo "##[set-output name=build;]${build}"
+        id: extract # allows use of ${{ steps.extract.outputs.stage }} for pipeline stage/repo
+        env:
+          SHA: ${{ toJSON(github.sha) }}
+          RUN_NUMBER: ${{ toJSON(github.run_number) }}
+
+      - uses: actions/setup-node@v2-beta
+        with:
+          node-version: '12'
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      # TODO: fix component bug
+      # - if the --component flag is included I get an error: Cannot find module '@serverless/website'
+      # - if the --component flag is removed I get an error: "component" input is required to run custom methods
+      - name: Serverless AWS authentication
+        run: npx serverless --component=website config credentials --provider aws --key ${{ secrets.AWS_ACCESS_KEY_ID }} --secret ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: deploy  # sed removes the obnoxious output of sls ("aNA" and "*› Deploying*")
+        run: |
+          npm ci
+          npm run build
+          npx serverless > junk.output && sed '/› Deploying\|aNA/d' junk.output 
+        env:
+          STAGE: ${{ steps.extract.outputs.stage }}
+          REPO: ${{ steps.extract.outputs.repo }}
+          BUILD_ID: ${{ steps.extract.outputs.build }}
+      
+      - name: Commit any tracked files
+        run: |
+          git config user.name 'CodaBool'
+          git config user.email 'codabool@pm.me'
+          if git status | grep -q 'untracked files present'; then
+            echo "commiting new serverless state"
+            git add .
+            git commit -m "github workflow updated files [no ci]"
+            git push
+          else
+            echo "No deployment changes"
+          fi

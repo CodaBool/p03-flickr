@@ -1,0 +1,21 @@
+# DOC https://github.com/serverless/components
+name: ${env.REPO}
+stage: ${env.STAGE}
+website:
+  component: '@serverless/website'
+  inputs:
+    bucketName: ${name}-${stage}
+    code:
+      src: ./dist                   # (optional) path to the source folder. default is a hello world html file.
+    # env:
+    #   BUILD_ID: ${env.BUILD_ID}
+    #   STAGE: ${env.STAGE}
+    #   REPO: ${env.REPO}
+    # domain: serverless.com        # (optional) domain name. this could also be a subdomain.
+    # bucketName: my-bucket           # (optional) aws bucket name. default is an auto generated name.
+
+# component: website # A Component in the Registry
+# name: my-website # The name of your Component Instance
+# inputs: # The configuration the Component accepts
+#   src:
+#     src: ./
